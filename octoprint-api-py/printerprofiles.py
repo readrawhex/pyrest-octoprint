@@ -1,0 +1,87 @@
+class Profile:
+    def __init__(
+        self,
+        id: str = None,
+        name: str = None,
+        color: str = None,
+        model: str = None,
+        default: bool = None,
+        current: bool = None,
+        resource: str = None,
+        volume: dict = None,
+        heatedBed: bool = None,
+        heatedChamber: bool = None,
+        axes: dict = None,
+        extruder: dict = None,
+    ):
+        self.id = str(id) if id else None
+        self.name = str(name) if name else None
+        self.color = str(color) if color else None
+        self.model = str(model) if model else None
+        self.default = bool(default) if default else None
+        self.current = bool(current) if current else None
+        self.resource = str(resource) if resource else None
+        self.volume = dict(volume) if volume else None
+        self.heatedBed = dict(heatedBed) if heatedBed else None
+        self.heatedChamber = dict(heatedChamber) if heatedChamber else None
+        self.axes = dict(axes) if axes else None
+        self.extruder = dict(extruder) if extruder else None
+        self._deleted = False
+
+    def to_dict(self) -> dict:
+        """
+        Return a dictionary of all of the profile data, excluding non-mutable
+        data. This is used for serialization in api requests primarily.
+        """
+        data = {}
+        if self.id:
+            data["id"] = self.id
+        if self.name:
+            data["name"] = self.name
+        if self.color:
+            data["color"] = self.color
+        if self.model:
+            data["model"] = self.model
+        if self.default:
+            data["default"] = self.default
+        if self.resource:
+            data["resource"] = self.resource
+        if self.volume:
+            data["volume"] = self.volume
+        if self.heatedBed:
+            data["heatedBed"] = self.heatedBed
+        if self.heatedChamber:
+            data["heatedChamber"] = self.heatedChamber
+        if self.axes:
+            data["axes"] = self.axes
+        if self.extruder:
+            data["extruder"] = self.extruder
+
+    def update(self):
+        """
+        Update any changes made to the Profile object within OctoPrint.
+
+        - endpoint: `/api/printerprofiles/<self.id>`
+        - method: `POST`
+        """
+        resp = self._make_request(
+            f"/api/printerprofiles/{self.id}", "POST", json={"profile": self.to_dict()}
+        )
+        for k, v in resp.json().get("profile"):
+            setattr(self, k, v)
+
+    def delete(self):
+        """
+        Deletes the Profile within OctoPrint.
+
+        - endpoint: `/api/printerprofiles/<self.id>`
+        - method: `DELETE`
+        """
+        self._make_request(f"/api/printerprofiles/{self.id}", "DELETE")
+        self._deleted = True
+
+
+class AddOrUpdateRequest:
+    def __init__(self, profiles: Profile, basedOn: str = None):
+        self.profiles = profiles
+        self.basedOn = basedOn
