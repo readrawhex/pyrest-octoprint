@@ -1,4 +1,7 @@
+from __future__ import annotations
 import requests
+import urllib
+from requests_toolbelt.utils import dump
 
 
 class BaseClient:
@@ -11,7 +14,7 @@ class BaseClient:
         self,
         base_url: str = None,
         api_key: str = None,
-        parent_client: BaseClient = None,
+        parent_client: BaseClient | None = None,
     ):
         if parent_client:
             api_key = parent_client._api_key
@@ -27,13 +30,13 @@ class BaseClient:
         in `X-Api-Key` header.
         """
         if "headers" in kwargs.keys():
-            headers = kwargs.pop("headers")
-            headers["X-Api-Key"] = self.api_key
+            headers = dict(kwargs.pop("headers"))
+            headers["X-Api-Key"] = self._api_key
         else:
             headers = {
-                "X-Api-Key": self.api_key,
+                "X-Api-Key": self._api_key,
             }
-        url = urllib.parse.urljoin(self.url, endpoint)
+        url = urllib.parse.urljoin(self._base_url, endpoint)
         resp = requests.request(method, url, headers=headers, **kwargs)
         resp.raise_for_status()
         return resp
@@ -49,5 +52,5 @@ class BaseClient:
         - endpoint: `/api/connection`
         - method: `GET`
         """
-        resp = self._make_request("/api/server")
+        resp = self._make_request("/api/connection")
         return resp.json()

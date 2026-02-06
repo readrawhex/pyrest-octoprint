@@ -1,8 +1,14 @@
 class TemperatureData:
-    def __init__(self, name: str, actual: float, target: float, offset: float = None):
-        self.actual = actual
-        self.target = target
-        self.offset = offset
+    def __init__(self, actual: float, target: float, offset: float = None):
+        self.actual = float(actual)
+        self.target = float(target)
+        self.offset = float(offset) if offset else None
+
+    def __str__(self):
+        return str({"actual": self.actual, "target": self.target, "offset": self.offset})
+
+    def to_dict(self):
+        return {"actual": self.actual, "target": self.target, "offset": self.offset}
 
 
 class TemperatureOffset:
@@ -59,10 +65,10 @@ class GcodeAnalysisInformation:
 
 
 class PrintHistory:
-    def __init__(self, success: float, failure: float, last: dict):
-        self.success = success
-        self.failure = failure
-        self.last = last
+    def __init__(self, success: float, failure: float, last: dict = None):
+        self.success = float(success)
+        self.failure = float(failure)
+        self.last = dict(last) if last else None
 
 
 class PrintStatistics:

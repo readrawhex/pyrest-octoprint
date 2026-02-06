@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyrest-octoprint"
+version = "0.0.1"
+description = "Pythonic Wrapper for OctoPrint REST API"
+license = "MIT"
+license-files = ["LICENSE.txt"]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.31.0",
+]
+authors = [
+  {name = "Miles Dustin", email = "milesdustin45@gmail.com"},
+]
+
+[project.urls]
+Repository = "https://github.com/readrawhex/pyrest-octoprint/pyrest-octoprint.git"

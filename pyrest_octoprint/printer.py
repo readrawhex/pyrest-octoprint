@@ -30,8 +30,14 @@ class TemperatureState:
     """
 
     def __init__(self, tools: list = None, bed: TemperatureData = None):
-        self.tools = tool
+        self.tools = tools
         self.bed = bed
+
+    def __str__(self):
+        return str({"tools": [x.to_dict() for x in self.tools], "bed": self.bed.to_dict()})
+
+    def to_dict(self):
+        return {"tools": [x.to_dict() for x in self.tools], "bed": self.bed.to_dict()}
 
 
 class FullState:
@@ -48,12 +54,21 @@ class FullState:
         temperature_history: list = None,
     ):
         self.temperature = temperature
-        self.sd_ready = bool(sd)
+        self.sd_ready = bool(sd_ready)
         self.state_text = str(state_text)
         self.state_flags = dict(state_flags)
         self.temperature_history = (
             list(temperature_history) if temperature_history else None
         )
+
+    def __str__(self):
+        return str({
+            "temperature": self.temperature.to_dict(),
+            "sd.ready": self.sd_ready,
+            "state.text": self.state_text,
+            "state.flags": self.state_flags,
+            "temperature.history": "[" + ", ".join([str(x) for x in self.temperature_history]) + "]" if self.temperature_history else None,
+        })
 
 
 class ChamberState:
@@ -110,7 +125,7 @@ class Printer(BaseClient):
                 `baudratePreference` value set in OctoPrint.
             printer_profile (Profile): Specific printer profile to use for connection. Defaults
                 to default profile is none is provided.
-            save (bool): Whether to save the request’s port and baudrate settings as
+            save_default (bool): Whether to save the request’s port and baudrate settings as
                 new preferences. Defaults to false if not set.
             autoconnect (bool): Whether to automatically connect to the printer on
                 OctoPrint’s startup in the future. If not set no changes will be made
@@ -128,8 +143,8 @@ class Printer(BaseClient):
         elif self.printer_profile:
             data["printerProfile"] = self.printer_profile.name
             printer_profile = self.printer_profile
-        if save:
-            data["save"] = save
+        if save_default:
+            data["save"] = save_default
         if autoconnect:
             data["autoconnect"] = autoconnect
         resp = self._make_request("/api/connection", "POST", json=data)
@@ -158,14 +173,14 @@ class Printer(BaseClient):
         """
         connection_data = self._connection_settings()
         if (
-            connection_data["current"]["state"] != "Operational"
-            or connection_data["current"]["port"] != self.serial_port
+            connection_data.get("current", {}).get("state", None) != "Operational"
+            or connection_data.get("current", {}).get("port", None) != self.serial_port
         ):
             if fail_on_disconnect:
                 raise PrinterConnectionError(
                     "Printer is not operationally connected: state: {}, port: {} (should be {})".format(
-                        connection_data["current"]["state"],
-                        connection_data["current"]["port"],
+                        connection_data.get("current", {}).get("state", None),
+                        connection_data.get("current", {}).get("port", None),
                         self.serial_port,
                     )
                 )
@@ -177,7 +192,7 @@ class Printer(BaseClient):
                 connection_data = self.connect(baudrate, printer_profile)
         return connection_data
 
-    def update(self, history: int = 0):
+    def update_info(self, history: int = 0) -> FullState:
         """
         Retrieve the most updated state of printer, including
         temperature, sdcard, and state information. Update self
@@ -203,7 +218,7 @@ class Printer(BaseClient):
         resp = self._make_request("/api/printer", params=data)
 
         resp_data = resp.json()
-        temp_history = resp_data["temperature"].pop("history", None)
+        temp_history = resp_data["temperature"].pop("history", [])
 
         self.temperature = self._parse_temperature(resp_data["temperature"])
         self.temp_history = {}
@@ -211,15 +226,15 @@ class Printer(BaseClient):
             k = x.pop("time")
             v = self._parse_temperature(x)
             self.temp_history[k] = v
-        self.sd_ready = resp_data["sd_state"].get("ready", None)
-        self.state = bool(resp["state"]["text"])
-        for k, v in resp["state"]["flags"]:
+        self.sd_ready = resp_data.get("sd", {}).get("ready", None)
+        self.state = str(resp_data["state"]["text"])
+        for k, v in resp_data["state"]["flags"].items():
             setattr(self, k, v)
         return FullState(
             self.temperature,
-            self.sd_state,
+            self.sd_ready,
             self.state,
-            resp["state"]["flags"],
+            resp_data["state"]["flags"],
             self.temp_history,
         )
 
@@ -661,7 +676,7 @@ class Printer(BaseClient):
         resp = self._make_request("/api/printer/command/custom")
         return resp.json()
 
-    def job_info(self) -> JobInformationResponse:
+    def job_info(self) -> job.JobInformationResponse:
         """
         Retrieves the current information about the Printer's job and
         updates its own related attributes appropriately.

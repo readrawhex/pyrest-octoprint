@@ -30,7 +30,7 @@ Here's a basic example, using mostly default configurations within OctoPrint.
 For more tweaking, see documentation (currently only in code).
 
 ```python
-from pyrest-octoprint import Client
+from pyrest-octoprint.client import Client
 
 # set up a client
 client = Client(base_url="https://your.octoprint.domain.com:5000", api_key="OCTOPRINT_API_KEY")
@@ -52,7 +52,9 @@ print(job.status)
 
 ## Acknowledgements
 
-Obviously, [octoprint]("https://github.com/OctoPrint/OctoPrint").
+Obviously, [octoprint]("https://github.com/OctoPrint/OctoPrint"). A lot of documentation
+included in this library is taken from the api documentation for OctoPrint found
+[here]("https://docs.octoprint.org/en/main/api/").
 
 Acknowledgements to the [octorest repo]("https://github.com/dougbrion/OctoRest"), which
 covers the API for version `1.3.11`. I decided to rewrite this API for the current version

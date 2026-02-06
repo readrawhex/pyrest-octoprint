@@ -1,7 +1,11 @@
 import requests
+import os
 
 from . import printerprofiles, printer, files, system
+from .printer import Printer
 from .base import BaseClient
+
+from requests_toolbelt.utils import dump
 
 
 class Client(BaseClient):
@@ -55,13 +59,12 @@ class Client(BaseClient):
         - method: `POST`
 
         params:
-            printer (Printer): Printer to connect to.
             serial_port (str): Specific serial port to connect to.
             baudrate (int): Specific baudrate to connect with. Defaults to default
                 `baudratePreference` value set in OctoPrint.
             printer_profile (Profile): Specific printer profile to use for connection. Defaults
                 to default profile is none is provided.
-            save (bool): Whether to save the request’s port and baudrate settings as
+            save_default (bool): Whether to save the request’s port and baudrate settings as
                 new preferences. Defaults to false if not set.
             autoconnect (bool): Whether to automatically connect to the printer on
                 OctoPrint’s startup in the future. If not set no changes will be made
@@ -73,12 +76,12 @@ class Client(BaseClient):
             data["baudrate"] = int(baudrate)
         if printer_profile:
             data["printerProfile"] = printer_profile.name
-        if save:
-            data["save"] = save
+        if save_default:
+            data["save"] = save_default
         if autoconnect:
             data["autoconnect"] = autoconnect
         resp = self._make_request("/api/connection", "POST", json=data)
-        printer = printer.Printer(parent_client=self, serial_port=data["port"])
+        printer = Printer(parent_client=self, serial_port=data["port"])
         return printer
 
     def disconnect_current_printer(self):
@@ -95,7 +98,7 @@ class Client(BaseClient):
         self,
         path: str = None,
         override_cache: bool = False,
-        recursive: bool = False,
+        recursive: bool = True,
         location: str = "local",
     ):
         """
@@ -122,10 +125,35 @@ class Client(BaseClient):
         if path is not None:
             url = os.path.join(url, path)
         resp = self._make_request(url, params=params)
-        return files.RetrieveResponse(**(resp.json()))
+        return files.RetrieveResponse(**(resp.json()), parent_client=self)
 
-    def file_upload(
-        self, filename: str, file, path: str = "/", location: str = "local"
+    def get_file(
+        self,
+        filename: str,
+        path: str = None,
+        override_cache: bool = False,
+        recursive: bool = False,
+        location: str = "local",
+    ):
+        """
+        Similar to `self.get_files`, but returns the specified `File` object
+        with a name of `filename`.
+
+        params:
+            override_cache (bool): override cache on request
+            recursive (bool): return files within folders in root directory
+            location (str): either `local` (uploads folder) or `sdcard`
+
+        Returns a File object if it exists, else None.
+        """
+        retrieve_response = self.get_files(path, override_cache, recursive, location)
+        for f in retrieve_response.files:
+            if f.name == filename:
+                return f
+        return None
+
+    def upload_file(
+        self, file, path: str = "/", location: str = "local"
     ):
         """
         Upload a file to the selected `location`.
@@ -134,25 +162,18 @@ class Client(BaseClient):
         - method: `POST`
 
         params:
-            filename (str): name for uploaded file
             file (file-like): actual file object to upload (bytes object)
             path (str): path to parent folder within `location` for upload.
             location (str): full path location to upload file to
         """
         if location not in ["local", "sdcard"]:
             raise ValueError("`location` path must be either 'local' or 'sdcard'")
-        url = "/api/files/" + location
-        resp = self._make_request(
-            url,
-            "POST",
-            files={
-                "files": (filename, file),
-                "path": (None, path),
-            },
-        )
-        return files.UploadResponse(**(resp.json()))
+        url = "/api/files/" + location + (path if path not in ["/", None] else "")
+        files_data = {"file": file}
+        resp = self._make_request(url, "POST", files=files_data)
+        return self.get_file(os.path.basename(file.name), path=(path if path not in ["/", None] else None), override_cache=True, location=location)
 
-    def new_directory(self, foldername: str, path: str = None):
+    def new_folder(self, foldername: str, path: str = None):
         """
         Create a subfolder within the local uploads folder. Folder
         creation is only supported in `local` storage.
@@ -165,15 +186,14 @@ class Client(BaseClient):
             path (str): Optional, path to parent folder within uploads folder.
         """
         if foldername in [None, ""]:
-            raise ValueError(f"invalid foldername: '{foldername}'")
+            raise ValueError(f"invalid foldername")
         resp = self._make_request(
-            "/api/files/local",
-            files={
-                "foldername": (None, foldername),
-                "path": (None, path),
-            },
+            "/api/files/local" + (path if path not in [None, "/"] else ""),
+            "POST",
+            data={"foldername": foldername},
+            files={},
         )
-        return files.UploadResponse(**(resp.json()))
+        return self.get_file(foldername, path=(path if path not in ["/", None] else None), override_cache=True)
 
     def unselect_file(self):
         """

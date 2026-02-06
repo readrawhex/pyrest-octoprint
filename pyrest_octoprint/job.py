@@ -1,5 +1,5 @@
 from . import datamodel
-from .file import FileInformation
+from .files import FileInformation
 
 
 class JobInformation:

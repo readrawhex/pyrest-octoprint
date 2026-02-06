@@ -1,3 +1,4 @@
 **/__pycache__/
 **/.venv/
 docker-compose.yml
+**/pyrest_octoprint.egg-info/
