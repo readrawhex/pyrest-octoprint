@@ -115,7 +115,7 @@ class File(FileInformation):
             else None
         )
         self.prints = datamodel.PrintHistory(**prints) if prints else None
-        self.statistics = PrintStatistics(**statistics) if statistics else None
+        self.statistics = datamodel.PrintStatistics(**statistics) if statistics else None
         super().__init__(**kwargs)
 
     def __str__(self):
@@ -139,7 +139,7 @@ class File(FileInformation):
         self._make_request(
             "/api/files/" + path,
             "POST",
-            params={
+            json={
                 "command": "select",
                 "print": print_now,
             },
@@ -155,7 +155,7 @@ class File(FileInformation):
         self._make_request(
             "/api/files/" + path,
             "POST",
-            params={
+            json={
                 "command": "unselect",
             },
         )
@@ -188,7 +188,7 @@ class File(FileInformation):
         self._make_request(
             "/api/files/" + path,
             "POST",
-            params={
+            json={
                 "command": "move",
                 "destination": folder.path,
             },

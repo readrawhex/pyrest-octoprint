@@ -58,7 +58,7 @@ class FullState:
         self.state_text = str(state_text)
         self.state_flags = dict(state_flags)
         self.temperature_history = (
-            list(temperature_history) if temperature_history else None
+            list(temperature_history) if temperature_history else []
         )
 
     def __str__(self):
@@ -69,6 +69,15 @@ class FullState:
             "state.flags": self.state_flags,
             "temperature.history": "[" + ", ".join([str(x) for x in self.temperature_history]) + "]" if self.temperature_history else None,
         })
+
+    def to_dict(self):
+        return {
+            "temperature": self.temperature.to_dict(),
+            "sd.ready": self.sd_ready,
+            "state.text": self.state_text,
+            "state.flags": self.state_flags,
+            "temperature.history": [x.to_dict() for x in self.temperature_history],
+        }
 
 
 class ChamberState:
@@ -173,7 +182,7 @@ class Printer(BaseClient):
         """
         connection_data = self._connection_settings()
         if (
-            connection_data.get("current", {}).get("state", None) != "Operational"
+            connection_data.get("current", {}).get("state", None) in [None, "Error", "CloseOrError"]
             or connection_data.get("current", {}).get("port", None) != self.serial_port
         ):
             if fail_on_disconnect:
@@ -192,7 +201,7 @@ class Printer(BaseClient):
                 connection_data = self.connect(baudrate, printer_profile)
         return connection_data
 
-    def update_info(self, history: int = 0) -> FullState:
+    def retrieve_info(self, history: int = 0) -> FullState:
         """
         Retrieve the most updated state of printer, including
         temperature, sdcard, and state information. Update self
@@ -348,7 +357,7 @@ class Printer(BaseClient):
         - method: `POST`
 
         params:
-            temp (int / list): temperature(s) for tool(s).
+            temp (int / list): temperature(s) for tool(s) in celsius.
         """
         if type(temp) not in [int, list]:
             raise ValueError("`temp` must be either an integer or list object")
@@ -517,7 +526,7 @@ class Printer(BaseClient):
         self._ensure_connection()
         resp = self._make_request("/api/printer/chamber", json=data)
 
-    def update_chamber(self, history: int = 0):
+    def retrieve_chamber(self, history: int = 0):
         """
         Retrieves the current temperature data (actual, target and offset)
         plus optionally a (limited) history (actual, target, timestamp) for
@@ -688,13 +697,15 @@ class Printer(BaseClient):
         resp = self._make_request("/api/job")
         resp_data = resp.json()
 
-        self.job = job.JobInformation(**(resp_data.get("job")))
+        self.job = resp_data.get("job")
         self.progress = resp_data.get("progress")
         self.print_status = resp_data.get("state")
         self.print_error = resp_data.get("error", None)
-        return job.JobInformationResponse(
+        obj = job.JobInformationResponse(
             self.job, self.progress, self.print_status, self.print_error
         )
+        self.job = obj.job
+        return obj
 
     def start_print(self, file: files.File):
         """

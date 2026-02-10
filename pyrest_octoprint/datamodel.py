@@ -39,6 +39,18 @@ class ProgressInformation:
         self.printTimeLeft = printTimeLeft
         self.printTimeLeftOrigin = printTimeLeftOrigin
 
+    def __str__(self):
+        return str(self.to_dict())
+
+    def to_dict(self):
+        return {
+            "completion": self.completion,
+            "filepos": self.filepos,
+            "printTime": self.printTime,
+            "printTimeLeft": self.printTimeLeft,
+            "printTimeLeftOrigin": self.printTimeLeftOrigin,
+        }
+
 
 class GcodeAnalysisInformation:
     """
