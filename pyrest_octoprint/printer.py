@@ -116,7 +116,7 @@ class Printer(BaseClient):
             x for x in sorted(data.keys(), key=lambda x: x) if x.startswith("tool")
         ]:
             tools.append(TemperatureData(**data[k]))
-        bed = TemperatureData(**(data["bed"]))
+        bed = TemperatureData(**(data["bed"])) if "bed" in data.keys() else None
         return TemperatureState(tools=tools, bed=bed)
 
     def connect(
