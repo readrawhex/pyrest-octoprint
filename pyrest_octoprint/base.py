@@ -2,6 +2,7 @@ from __future__ import annotations
 import requests
 import urllib
 from requests_toolbelt.utils import dump
+from .exceptions import handle_http_exception
 
 
 class BaseClient:
@@ -24,6 +25,7 @@ class BaseClient:
         self._api_key = api_key
         self._base_url = base_url
 
+    @handle_http_exception
     def _make_request(self, endpoint: str, method: str = "GET", **kwargs):
         """
         make request to Octoprint with `self._api_key` included
