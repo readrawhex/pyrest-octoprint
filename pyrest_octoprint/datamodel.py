@@ -65,6 +65,7 @@ class GcodeAnalysisInformation:
         printingArea: dict = None,
         travelArea: dict = None,
         travelDimensions: dict = None,
+        **kwargs,
     ):
         self.estimatedPrintTime = (
             float(estimatedPrintTime) if estimatedPrintTime else None

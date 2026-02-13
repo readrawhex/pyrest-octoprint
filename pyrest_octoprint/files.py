@@ -213,6 +213,8 @@ class RetrieveResponse:
                     self.files.append(File(**x, **kwargs))
         elif files is not None:
             raise TypeError(f"invalid type for files: {type(files)}")
+        else:
+            self.files = None
         self.free = str(free) if free else None
         self.total = str(total) if total else None
 

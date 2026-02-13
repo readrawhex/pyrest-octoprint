@@ -10,8 +10,8 @@ class ErrorInformation:
 
     def __init__(
         self,
-        error: str,
-        reason: str,
+        error: str = None,
+        reason: str = None,
         consequence: str = None,
         faq: str = None,
         logs: list = None,
@@ -20,7 +20,8 @@ class ErrorInformation:
         self.reason = str(reason)
         self.consequence = str(consequence)
         self.faq = str(faq)
-        self.logs = list(logs)
+        if logs is not None:
+            self.logs = list(logs)
 
 
 class TemperatureState:
