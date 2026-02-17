@@ -195,17 +195,17 @@ class Client(BaseClient):
         )
         return self.get_file(foldername, path=(path if path not in ["/", None] else None), override_cache=True)
 
-    def unselect_file(self):
+    def unselect_file(self, location="local/", path="current"):
         """
         Unselects the currently selected file for printing.
 
-        - endpoint: `/api/files/<path>`
+        - endpoint: `/api/files/<location>/<path>`
         - method: `POST`
         """
         resp = self._make_request(
-            "/api/files/" + path,
+            "/api/files/" + location + path,
             "POST",
-            params={
+            json={
                 "command": "unselect",
             },
         )
