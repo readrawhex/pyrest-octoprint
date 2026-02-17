@@ -211,7 +211,7 @@ class Client(BaseClient):
         )
         return resp.json
 
-    def retrieve_profile(self, profile: str = None):
+    def retrieve_profile(self, profile: str = None) -> printerprofiles.Profile:
         """
         Retrieves an object representing all configured printer profiles or a single
         profilec. If no `profile` argument is specified, defaults to all profiles.
@@ -223,9 +223,9 @@ class Client(BaseClient):
         if profile:
             url += f"/{profile}"
         resp = self._make_request(url)
-        return printerprofiles.Profile(**(resp.json()))
+        return printerprofiles.Profile(**(resp.json()), parent_client=self)
 
-    def add_profile(self, profile, based_on=None):
+    def add_profile(self, profile, based_on=None) -> printerprofiles.Profile:
         """
         Adds a new printer profile based on either the current default profile or
         the profile identified in basedOn. The provided profile data will be merged
@@ -247,7 +247,7 @@ class Client(BaseClient):
         if based_on:
             data["basedOn"] = based_on
         resp = self._make_request("/api/printerprofiles", "POST", json=data)
-        return printerprofiles.Profile(**(resp.json()))
+        return printerprofiles.Profile(**(resp.json().get("profile")), parent_client=self)
 
     def list_system_commands(self, source: str = None) -> list:
         """

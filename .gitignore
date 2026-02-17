@@ -2,3 +2,5 @@
 **/.venv/
 docker-compose.yml
 **/pyrest_octoprint.egg-info/
+**/example.gcode
+**/test_pyrest_octoprint.py
