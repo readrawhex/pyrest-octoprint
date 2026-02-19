@@ -35,10 +35,10 @@ class TemperatureState:
         self.bed = bed
 
     def __str__(self):
-        return str({"tools": [x.to_dict() for x in self.tools], "bed": self.bed.to_dict()})
+        return str(self.to_dict())
 
     def to_dict(self):
-        return {"tools": [x.to_dict() for x in self.tools], "bed": self.bed.to_dict()}
+        return {"tools": [x.to_dict() for x in self.tools if x is not None], "bed": self.bed.to_dict() if self.bed is not None else None}
 
 
 class FullState:
